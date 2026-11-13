@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NexaDesk Lite</title>
+<style>
+  :root {
+    --bg: #f4f6f8; --card: #ffffff; --text: #1d2733; --muted: #5c6b7a;
+    --line: #dde3e9; --brand: #1f6f8b; --brand-dark: #17566c;
+    --p1: #c0392b; --p2: #d68910; --p3: #5c6b7a; --error: #b03a2e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); font-size: 15px; }
+  header { background: var(--brand); color: #fff; padding: 14px 24px; }
+  header h1 { margin: 0; font-size: 20px; }
+  header p { margin: 2px 0 0; opacity: 0.85; font-size: 13px; }
+  main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px;
+         padding: 20px 24px; max-width: 1200px; margin: 0 auto; }
+  @media (max-width: 860px) { main { grid-template-columns: 1fr; } }
+  section { background: var(--card); border: 1px solid var(--line);
+            border-radius: 8px; padding: 16px 18px; min-width: 0; }
+  .scroll { overflow-x: auto; }
+  h2 { margin: 0 0 12px; font-size: 16px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  input, select, button { font: inherit; padding: 7px 10px; border: 1px solid var(--line);
+                          border-radius: 6px; background: #fff; color: var(--text); }
+  input[type=text] { flex: 1; min-width: 160px; }
+  button { background: var(--brand); color: #fff; border-color: var(--brand); cursor: pointer; }
+  button:hover { background: var(--brand-dark); }
+  button.plain { background: #fff; color: var(--muted); border-color: var(--line); }
+  button.plain:hover { color: var(--error); border-color: var(--error); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+  .badge { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 10px; color: #fff; }
+  .P1 { background: var(--p1); } .P2 { background: var(--p2); } .P3 { background: var(--p3); }
+  .msg { min-height: 20px; font-size: 13px; margin: 4px 0 0; }
+  .msg.error { color: var(--error); } .msg.ok { color: var(--brand); }
+  .chat { display: flex; flex-direction: column; gap: 10px; max-height: 420px;
+          overflow-y: auto; margin-bottom: 12px; }
+  .bubble { padding: 9px 12px; border-radius: 10px; max-width: 92%; line-height: 1.4; }
+  .you { align-self: flex-end; background: var(--brand); color: #fff; }
+  .bot { align-self: flex-start; background: #eef3f6; }
+  .topic { display: block; font-size: 11px; color: var(--muted); margin-top: 4px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 24px 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>NexaDesk Lite</h1>
+  <p>IT and HR service desk for Nexa Group employees</p>
+</header>
+
+<main>
+  <section>
+    <h2>Tickets</h2>
+    <div class="row">
+      <label for="filter">Category</label>
+      <select id="filter">
+        <option value="">All</option>
+        <option value="IT">IT</option>
+        <option value="HR">HR</option>
+      </select>
+      <button class="plain" id="reset" type="button">Reset demo data</button>
+    </div>
+    <div class="scroll">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Title</th><th>Category</th><th>Priority</th><th>Response</th><th>Status</th><th></th></tr>
+      </thead>
+      <tbody id="tickets"></tbody>
+    </table>
+    </div>
+
+    <h2 style="margin-top:20px">Raise a ticket</h2>
+    <form id="new-ticket" class="row">
+      <input type="text" id="title" placeholder="Describe the problem">
+      <select id="category"><option>IT</option><option>HR</option></select>
+      <select id="priority">
+        <option value="P3">P3 Normal</option>
+        <option value="P2">P2 High</option>
+        <option value="P1">P1 Urgent</option>
+      </select>
+      <button type="submit">Create</button>
+    </form>
+    <p class="msg" id="ticket-msg"></p>
+  </section>
+
+  <section>
+    <h2>Ask the assistant</h2>
+    <div class="chat" id="chat">
+      <div class="bubble bot">Hi! Ask me about passwords, leave, laptops or response times.</div>
+    </div>
+    <form id="ask" class="row">
+      <input type="text" id="question" placeholder="How do I reset my password?">
+      <button type="submit">Ask</button>
+    </form>
+  </section>
+</main>
+
+<footer>This page uses the same API your tests use. Open your browser's developer tools, Network tab, to watch the calls.</footer>
+
+<script>
+  const hoursText = (h) => (h < 24 ? `${h} hours` : `${h / 24} day${h === 24 ? "" : "s"}`);
+
+  function errorText(body) {
+    if (Array.isArray(body.detail)) {
+      return body.detail.map((d) => d.msg.replace("Value error, ", "")).join("; ");
+    }
+    return body.detail || "Something went wrong";
+  }
+
+  function cell(text) {
+    const td = document.createElement("td");
+    td.textContent = text;
+    return td;
+  }
+
+  async function loadTickets() {
+    const category = document.getElementById("filter").value;
+    const url = category ? `/tickets?category=${category}` : "/tickets";
+    const tickets = await (await fetch(url)).json();
+    const body = document.getElementById("tickets");
+    body.innerHTML = "";
+    for (const t of tickets) {
+      const tr = document.createElement("tr");
+      tr.append(cell(t.id), cell(t.title), cell(t.category));
+      const pr = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = `badge ${t.priority}`;
+      badge.textContent = t.priority;
+      pr.append(badge);
+      tr.append(pr, cell(hoursText(t.response_time_hours)), cell(t.status));
+      const actions = document.createElement("td");
+      const del = document.createElement("button");
+      del.className = "plain";
+      del.type = "button";
+      del.textContent = "Delete";
+      del.onclick = async () => { await fetch(`/tickets/${t.id}`, { method: "DELETE" }); loadTickets(); };
+      actions.append(del);
+      tr.append(actions);
+      body.append(tr);
+    }
+  }
+
+  document.getElementById("filter").onchange = loadTickets;
+
+  document.getElementById("reset").onclick = async () => {
+    await fetch("/reset", { method: "POST" });
+    showTicketMsg("Demo data restored.", "ok");
+    loadTickets();
+  };
+
+  function showTicketMsg(text, kind) {
+    const msg = document.getElementById("ticket-msg");
+    msg.textContent = text;
+    msg.className = `msg ${kind}`;
+  }
+
+  document.getElementById("new-ticket").onsubmit = async (event) => {
+    event.preventDefault();
+    const response = await fetch("/tickets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: document.getElementById("title").value,
+        category: document.getElementById("category").value,
+        priority: document.getElementById("priority").value,
+      }),
+    });
+    const body = await response.json();
+    if (response.status === 201) {
+      showTicketMsg(`Ticket ${body.id} created. Response within ${hoursText(body.response_time_hours)}.`, "ok");
+      document.getElementById("title").value = "";
+      loadTickets();
+    } else {
+      showTicketMsg(`Not created (${response.status}): ${errorText(body)}`, "error");
+    }
+  };
+
+  function addBubble(text, who, topic) {
+    const bubble = document.createElement("div");
+    bubble.className = `bubble ${who}`;
+    bubble.textContent = text;
+    if (topic) {
+      const tag = document.createElement("span");
+      tag.className = "topic";
+      tag.textContent = `topic: ${topic}`;
+      bubble.append(tag);
+    }
+    const chat = document.getElementById("chat");
+    chat.append(bubble);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  document.getElementById("ask").onsubmit = async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("question");
+    const question = input.value.trim();
+    if (!question) return;
+    addBubble(question, "you");
+    input.value = "";
+    const response = await fetch("/assistant/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    const body = await response.json();
+    addBubble(body.answer, "bot", body.topic);
+  };
+
+  loadTickets();
+</script>
+</body>
+</html>
