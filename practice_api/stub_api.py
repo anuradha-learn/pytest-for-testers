@@ -245,11 +245,23 @@ FALLBACK_ANSWERS = [
 ]
 
 
+# The last answer given for each topic, so the next one is worded differently.
+last_answers: dict[str, str] = {}
+
+
+def _pick_answer(topic: str, answers: list[str]) -> str:
+    """Pick a random answer, but never the same one twice in a row."""
+    choices = [a for a in answers if a != last_answers.get(topic)]
+    answer = random.choice(choices)
+    last_answers[topic] = answer
+    return answer
+
+
 @app.post("/assistant/ask", response_model=Answer)
 def ask_assistant(question: Question):
     """Ask the NexaDesk assistant a question. The wording changes each time."""
     text = question.question.lower()
     for topic, details in ASSISTANT_TOPICS.items():
         if any(keyword in text for keyword in details["keywords"]):
-            return {"topic": topic, "answer": random.choice(details["answers"])}
-    return {"topic": "unknown", "answer": random.choice(FALLBACK_ANSWERS)}
+            return {"topic": topic, "answer": _pick_answer(topic, details["answers"])}
+    return {"topic": "unknown", "answer": _pick_answer("unknown", FALLBACK_ANSWERS)}
