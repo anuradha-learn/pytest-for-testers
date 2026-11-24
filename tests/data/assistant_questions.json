@@ -1,0 +1,38 @@
+[
+  {
+    "name": "password-reset",
+    "question": "How do I reset my password?",
+    "topic": "password_reset",
+    "facts": ["IT portal", "15 minutes"]
+  },
+  {
+    "name": "annual-leave",
+    "question": "How many days of annual leave do I get?",
+    "topic": "annual_leave",
+    "facts": ["30 days", "HR portal"]
+  },
+  {
+    "name": "new-laptop",
+    "question": "I need a new laptop",
+    "topic": "new_laptop",
+    "facts": ["IT ticket", "5 working days"]
+  },
+  {
+    "name": "urgent-ticket",
+    "question": "How fast do you answer an urgent ticket?",
+    "topic": "response_times",
+    "facts": ["4 hours"]
+  },
+  {
+    "name": "cafeteria-menu",
+    "question": "What's on the cafeteria menu today?",
+    "topic": "unknown",
+    "facts": ["raise a ticket"]
+  },
+  {
+    "name": "work from home",
+    "question": "How do I request to work from home?",
+    "topic": "unknown",
+    "facts": ["raise a ticket"]
+  }
+]
